@@ -1,55 +1,49 @@
 #include <ncurses.h>
+#include <signal.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <vector>
 
 #include "window.h"
 
-#define Y      ((LINES - height) / 2)
-#define X      ((COLS  - width ) / 2)
-#define HEIGHT 3
-#define WIDTH  10
+static void finish(int sig)
+{
+	endwin();
+
+	(void) sig;
+
+	exit(0);
+}
 
 int main(void)
 {
-	int y,      x;
-	int height, width;
 	int c = '\0';
+	std::vector<Window> wins;
+	WindowSpecification win_spec;
 
+	signal(SIGINT, finish);
 	initscr();
 	cbreak();
 	noecho();
+	start_color();
+	init_pair(1, COLOR_CYAN, COLOR_BLACK);
+	curs_set(0);
+	attron(COLOR_PAIR(1));
 
-	height = HEIGHT;
-	width  = WIDTH;
-	y      = Y;
-	x      = X;
+	while (1) {
+		wins.push_back(Window(win_spec));
 
-	Window win = Window(height, width, y, x);
-	while (c != '\n') {
-		switch (c) {
-			case 'h': if (x > 0)              x--; break;
-			case 'j': if (y < LINES - height) y++; break;
-			case 'k': if (y > 0)              y--; break;
-			case 'l': if (x < COLS - width)   x++; break;
+		while ((c = getch()) != '\n') {
+			if (islower(c))
+				wins.back().move(c);
+			else
+				wins.back().resize(c);
+
+			wins.back().redraw();
+			for (Window& w : wins)
+				w.refresh();
 		}
-
-		win.redraw(height, width, y, x);
-		c = getch();
 	}
-
-	while ((c = getch()) == '\n') {}
-	while (c != '\n') {
-		switch (c) {
-			case 'h': if (width  > 3)         width --; break;
-			case 'j': if (y + height < LINES) height++; break;
-			case 'k': if (height > 3)         height--; break;
-			case 'l': if (x + width  < COLS)  width ++; break;
-		}
-
-		win.redraw(height, width, y, x);
-		c = getch();
-	}
-
-
-	while ((c = getch()) != 'q') {}
 
 	endwin();
 	return 0;

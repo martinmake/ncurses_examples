@@ -1,7 +1,6 @@
 include $(MAKEFILE).config
 include Makefile.config
 
-LIBS+=ncurses
 DEFS+=$(EDEFS) PROOT='"$(realpath .)"'
 
 LIBS  :=$(addprefix -l,$(LIBS))
